@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>贪吃蛇3D</title>
+    <script type="text/javascript" charset="utf-8" src="three.js"></script>
+	<style>body{overflow:hidden;}</style>
+</head>
+<body>WSAD to move</body>
+	<script>
+	/*data*/
+	var map = [
+		[[0,-500,0],[500,500,10]],
+		[[0,-250,0],[500,25,50]],
+		[[0,-750,0],[500,25,50]],
+		[[-250,-500,0],[25,500,50]],
+		[[250,-500,0],[25,500,50]]
+	];
+	/* 场景 */
+	var WIDTH = document.documentElement.offsetWidth || 800,
+		HEIGHT = document.documentElement.clientHeight || 600;
+	var scene = new THREE.Scene();
+	/* 摄像头 */
+	var VIEW_ANGLE = 75,
+		ASPECT = WIDTH / HEIGHT,
+		NEAR = 0.1,
+		FAR = 10000;
+	var	camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR); /* 摄像机视角，视口长宽比，近切面，远切面 */
+		camera.position.set(0, -800, 300); //放置位置
+		camera.rotation.x= 0.6; //放置位置
+		scene.add(camera);
+	/* 显示对象 */
+	//var geometry = , //几何属性。代码位于"\src\extras\geometries"
+	//	material = ; //材质属性 "\src\materials"
+	var cube;
+	for (var i = 0; i < 5; i ++) {
+		cube = new THREE.Mesh(
+			new THREE.CubeGeometry( map[i][1][0], map[i][1][1], map[i][1][2] ),
+			new THREE.MeshLambertMaterial( { color: 0xcccccc} )
+		);
+		cube.position.set(map[i][0][0],map[i][0][1],map[i][0][2]); //放置角度
+		scene.add(cube);
+	}
+	var eat_body = [];
+	var eat_body_len = 3;
+	var spd = 1;
+	var eat_dir = [spd,0];
+	var nex_dir = [spd,0];
+	var mapck = [];
+	for (var i = 0; i < 19; i ++) {
+		mapck[i] = [];
+		for (var j = 0; j < 19; j ++)
+			mapck[i][j] = 0;
+	}
+	for (var i = 0; i < eat_body_len; i ++) {
+		eat_body[i] = new THREE.Mesh(
+			new THREE.SphereGeometry(12.5,25),
+			new THREE.MeshLambertMaterial( { color: 0x66ccff} )
+		);
+		eat_body[i].position.set(-(i+6)*25,-500-5*25,10); //放置角度
+		scene.add(eat_body[i]);
+	}
+	var eat_head = new THREE.Mesh(
+			new THREE.SphereGeometry( 12.5, 25 ),
+			new THREE.MeshLambertMaterial( { color: 0xff2222} )
+		);
+		eat_head.position.set(0-5*25,-500-5*25,10);		
+		scene.add(eat_head);
+	var food = new THREE.Mesh(
+			new THREE.SphereGeometry( 12.5, 25 ),
+			new THREE.MeshLambertMaterial( { color: 0xff66ff} )
+		);
+		var fx = Math.floor(Math.random()*19);
+		var fy = Math.floor(Math.random()*19);
+		mapck[fx][fy] = 3;
+		food.position.set(fx*25-225,fy*25-725,10);		
+		scene.add(food);
+	/* 灯光 */
+	var light = new THREE.DirectionalLight(0xFFFFFF); //直线光,"\src\lights"
+	var	light2 = new THREE.AmbientLight(0xFFFFFF, 0.1); //直线光,"\src\lights"AmbientLight
+		light.position.set(0, 0, 100).normalize();
+		scene.add(light);
+		scene.add(light2);
+	/* 渲染器 */
+	var	renderer = new THREE.WebGLRenderer({antialias:true}); //有Canvas，WebGL，SVG三种模式
+		renderer.setSize(WIDTH , HEIGHT);
+		document.body.appendChild(renderer.domElement);
+	/* 动画 */
+	var his = [];
+	for (var i = 0; i < eat_body_len; i ++) {
+		his[i] = [];
+		for (var j = 0; j <25; j ++)
+		his[i][j] = [0,0];
+	}
+	
+	var score_get = 0;
+	function addbody() {
+		score_get++;
+		eat_body[eat_body_len] = new THREE.Mesh(
+			new THREE.SphereGeometry(12.5,25),
+			new THREE.MeshLambertMaterial( { color: 0x66ccff} )
+		);
+		eat_body[eat_body_len].position.set(his[eat_body_len-1][0],his[eat_body_len-1][1],10); //放置角度
+		scene.add(eat_body[eat_body_len]);
+		his[eat_body_len] = [];
+		for (var j = 0; j <25; j ++)
+		his[eat_body_len][j] = [0,0];
+		eat_body_len ++;
+	}
+	
+	function gameover() {
+		alert("Game Over ：sore "+score_get);
+		location.replace(location);
+	}
+	(function anime(){
+		if (eat_head.position.x%25 == 0 && eat_head.position.y%25 == 0) {
+			eat_dir = nex_dir;
+			var temp = mapck[eat_head.position.x/25+9][eat_head.position.y/25+29];
+			if (temp==1) gameover();
+			else if (temp == 3) {
+				addbody();
+				fx = Math.floor(Math.random()*19);
+				fy = Math.floor(Math.random()*19);
+				while (mapck[fx][fy] != 0) {
+					fx = Math.floor(Math.random()*19);
+					fy = Math.floor(Math.random()*19);
+				}
+				mapck[fx][fy] = 3;
+				food.position.set(fx*25-225,fy*25-725,10);	
+			}else  {
+				mapck[eat_head.position.x/25+9][eat_head.position.y/25+29] = 1;
+				//if (eat_body[eat_body_len-1].position.x!=0 && eat_body[eat_body_len-1].position.y!=0)
+				mapck[(eat_body[eat_body_len-1].position.x/25+9)][(eat_body[eat_body_len-1].position.y/25+29)] = 0;
+			}
+		}
+		if (eat_head.position.x > 225 || eat_head.position.x< -225) gameover();
+		if (eat_head.position.y > -275 || eat_head.position.y< -725) gameover();
+		eat_head.position.x +=eat_dir[0]; 
+		eat_head.position.y +=eat_dir[1];
+		for (var i = 0; i < eat_body_len; i ++) {
+			eat_body[i].position.x=his[i][0][0];
+			eat_body[i].position.y=his[i][0][1];
+		}
+		for (var i = 0; i < eat_body_len; i ++) {
+			for (var j = 0; j < 24; j ++)
+			his[i][j] = his[i][j+1];
+			if (i == 0) his[i][24] = [eat_head.position.x,eat_head.position.y];
+			else his[i][24] = [eat_body[i-1].position.x,eat_body[i-1].position.y];
+		}
+		
+		renderer.render(scene, camera); //开始渲染
+		return requestAnimationFrame(anime);
+	})()
+	document.onkeydown=function(event){
+             var e = event || window.event || arguments.callee.caller.arguments[0];
+             if(e && e.keyCode==65){ // 按 a 
+                 if (eat_dir[1]!=0)nex_dir = [-spd,0];
+               }
+             if(e && e.keyCode==68){ // 按 d 
+                  if (eat_dir[1]!=0)nex_dir = [spd,0];
+                }   
+			if(e && e.keyCode==87){ // 按 w 
+                  if (eat_dir[0]!=0)nex_dir = [0,spd];
+                }  
+			if(e && e.keyCode==83){ // 按 s 
+				 if (eat_dir[0]!=0)nex_dir = [0,-spd];
+              }  
+			}
+</script>
+</html>
